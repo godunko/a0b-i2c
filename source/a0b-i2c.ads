@@ -6,7 +6,6 @@
 
 pragma Restrictions (No_Elaboration_Code);
 
-with A0B.Callbacks;
 with A0B.Types;
 
 package A0B.I2C
@@ -26,16 +25,16 @@ is
       State : Transfer_State;
    end record;
 
-   type Abstract_I2C_Slave_Driver is tagged;
+   type Abstract_I2C_Device_Driver is tagged;
 
-   type I2C_Slave_Driver_Access is
-     access all Abstract_I2C_Slave_Driver'Class;
+   type I2C_Device_Driver_Access is
+     access all Abstract_I2C_Device_Driver'Class;
 
    type I2C_Bus_Master is limited interface;
 
    not overriding procedure Start
      (Self    : in out I2C_Bus_Master;
-      Device  : not null I2C_Slave_Driver_Access;
+      Device  : not null I2C_Device_Driver_Access;
       Success : in out Boolean) is abstract;
    --  Lock the bus to be used by the given slave device, and send START
    --  condition. When the bus is already locked, and slave device is the
@@ -49,7 +48,7 @@ is
 
    not overriding procedure Write
      (Self    : in out I2C_Bus_Master;
-      Device  : not null I2C_Slave_Driver_Access;
+      Device  : not null I2C_Device_Driver_Access;
       Buffer  : Unsigned_8_Array;
       Status  : aliased out Transfer_Status;
       Stop    : Boolean;
@@ -71,7 +70,7 @@ is
 
    not overriding procedure Read
      (Self    : in out I2C_Bus_Master;
-      Device  : not null I2C_Slave_Driver_Access;
+      Device  : not null I2C_Device_Driver_Access;
       Buffer  : out Unsigned_8_Array;
       Status  : aliased out Transfer_Status;
       Stop    : Boolean;
@@ -94,7 +93,7 @@ is
 
    not overriding procedure Stop
      (Self    : in out I2C_Bus_Master;
-      Device  : not null I2C_Slave_Driver_Access;
+      Device  : not null I2C_Device_Driver_Access;
       Success : in out Boolean) is abstract;
    --  Request release of the bus locked by the given device and to send STOP
    --  condition. Slave must be equal to value provided to Start procedure.
@@ -113,20 +112,20 @@ is
    --    On input it specify whether operation should be processed.
    --    On output it returns whether operation has been initiated.
 
-   type Abstract_I2C_Slave_Driver is abstract tagged limited private;
+   type Abstract_I2C_Device_Driver is abstract tagged limited private;
 
    not overriding function Target_Address
-     (Self : Abstract_I2C_Slave_Driver) return Device_Address is abstract;
+     (Self : Abstract_I2C_Device_Driver) return Device_Address is abstract;
 
 private
 
-   type Abstract_I2C_Slave_Driver is
+   type Abstract_I2C_Device_Driver is
      abstract tagged limited null record;
 
    not overriding procedure On_Transfer_Completed
-     (Self : in out Abstract_I2C_Slave_Driver) is null;
+     (Self : in out Abstract_I2C_Device_Driver) is null;
 
    not overriding procedure On_Transaction_Completed
-     (Self : in out Abstract_I2C_Slave_Driver) is null;
+     (Self : in out Abstract_I2C_Device_Driver) is null;
 
 end A0B.I2C;
