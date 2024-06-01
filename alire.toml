@@ -1,0 +1,18 @@
+name = "a0b_i2c"
+description = "A0B I2C API"
+version = "0.1.0-dev"
+
+authors = ["Vadim Godunko"]
+maintainers = ["Vadim Godunko <vgodunko@gmail.com>"]
+maintainers-logins = ["godunko"]
+licenses = "Apache-2.0 WITH LLVM-exception"
+tags = ["embedded"]
+
+project-files = ["gnat/a0b_i2c.gpr"]
+
+[configuration]
+disabled = true
+
+[[depends-on]]
+a0b_base = "*"
+a0b_callbacks = "*"
