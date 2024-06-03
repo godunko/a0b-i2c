@@ -6,6 +6,8 @@
 
 pragma Restrictions (No_Elaboration_Code);
 
+pragma Ada_2022;
+
 package body A0B.I2C.Device_Drivers is
 
    procedure Reset_State (Self : in out I2C_Device_Driver'Class);
@@ -21,15 +23,6 @@ package body A0B.I2C.Device_Drivers is
       On_Completed : constant A0B.Callbacks.Callback := Self.On_Completed;
 
    begin
-      --  Compute transaction status
-
-      Self.Transaction.all :=
-        (Written_Octets => Self.Transfers (0).Status.Bytes,
-         Read_Octets    => Self.Transfers (1).Status.Bytes,
-         State          =>
-           (if Self.Transfers (Self.Current).Status.State = Success
-                then Success else Failure));
-
       --  Cleanup driver's state
 
       Self.Reset_State;
@@ -46,36 +39,76 @@ package body A0B.I2C.Device_Drivers is
    overriding procedure On_Transfer_Completed
      (Self : in out I2C_Device_Driver)
    is
-      use type Active_Transfer;
-
       Success : Boolean := True;
 
    begin
-      if Self.Current = 0
-        and then Self.Transfers (Self.Current).Status.State = I2C.Success
-        --  and then Self.Transfers (Self.Current).Status.Bytes
-        --             = Self.Transfers (Self.Current).Buffer'Length
-        and then Self.Transfers (Self.Current + 1).Buffer /= null
-      then
-         Self.Current := 1;
-         Self.Controller.Read
-           (Device  => Self'Unchecked_Access,
-            Buffer  => Self.Transfers (Self.Current).Buffer.all,
-            Status  => Self.Transfers (Self.Current).Status,
-            Stop    => True,
-            Success => Success);
+      case Self.State is
+         when Initial =>
+            raise Program_Error;
 
-      else
-         declare
-            Success : Boolean := True;
+         when Write =>
+            Self.Transaction.Written_Octets := Self.Write_Buffers (0).Bytes;
+            Self.Transaction.State          := Self.Write_Buffers (0).State;
 
-         begin
-            Self.Controller.Stop
+         when Write_Read =>
+            Self.Transaction.Written_Octets := Self.Write_Buffers (0).Bytes;
+            Self.Transaction.State          := Self.Write_Buffers (0).State;
+            Self.State                      := Read;
+
+            Self.Controller.Read
               (Device  => Self'Unchecked_Access,
+               Buffers => Self.Read_Buffers,
+               Stop    => True,
                Success => Success);
-         end;
-      end if;
+
+         when Read =>
+            Self.Transaction.Read_Octets := Self.Read_Buffers (0).Bytes;
+            Self.Transaction.State       := Self.Read_Buffers (0).State;
+      end case;
    end On_Transfer_Completed;
+
+   ----------
+   -- Read --
+   ----------
+
+   procedure Read
+     (Self         : in out I2C_Device_Driver'Class;
+      Buffer       : out Unsigned_8_Array;
+      Status       : aliased out Transaction_Status;
+      On_Completed : A0B.Callbacks.Callback;
+      Success      : in out Boolean) is
+   begin
+      if not Success or Self.State /= Initial then
+         Success := False;
+
+         return;
+      end if;
+
+      Self.Controller.Start (Self'Unchecked_Access, Success);
+
+      if not Success then
+         return;
+      end if;
+
+      Self.State           := Read;
+      Self.On_Completed    := On_Completed;
+      Self.Transaction     := Status'Unchecked_Access;
+      Self.Transaction.all := (0, 0, Active);
+
+      Self.Read_Buffers (0).Address  := Buffer (Buffer'First)'Address;
+      Self.Read_Buffers (0).Size     := Buffer'Length;
+
+      Self.Controller.Read
+        (Device  => Self'Unchecked_Access,
+         Buffers => Self.Read_Buffers (0 .. 0),
+         Stop    => True,
+         Success => Success);
+
+      if not Success then
+         Self.Transaction.State := Failure;
+         Self.Reset_State;
+      end if;
+   end Read;
 
    -----------------
    -- Reset_State --
@@ -83,11 +116,11 @@ package body A0B.I2C.Device_Drivers is
 
    procedure Reset_State (Self : in out I2C_Device_Driver'Class) is
    begin
-      Self.Current := 0;
-      Self.Transfers :=
-        (others => (Buffer => null, Status => (Bytes => 0, State => Failure)));
-      Self.Transaction := null;
+      Self.State          := Initial;
       A0B.Callbacks.Unset (Self.On_Completed);
+      Self.Transaction    := null;
+      Self.Write_Buffers  := [others => (System.Null_Address, 0, 0, Active)];
+      Self.Read_Buffers   := [others => (System.Null_Address, 0, 0, Active)];
    end Reset_State;
 
    -----------
@@ -101,29 +134,36 @@ package body A0B.I2C.Device_Drivers is
       On_Completed : A0B.Callbacks.Callback;
       Success      : in out Boolean) is
    begin
+      if not Success or Self.State /= Initial then
+         Success := False;
+
+         return;
+      end if;
+
       Self.Controller.Start (Self'Unchecked_Access, Success);
 
       if not Success then
          return;
       end if;
 
-      Self.On_Completed   := On_Completed;
-      Self.Transaction    := Status'Unchecked_Access;
+      Self.State           := Write;
+      Self.On_Completed    := On_Completed;
+      Self.Transaction     := Status'Unchecked_Access;
+      Self.Transaction.all := (0, 0, Active);
 
-      Self.Transfers (0) :=
-        (Buffer => Buffer'Unrestricted_Access,
-         Status => (Bytes => 0, State => Active));
-      Self.Transfers (1) :=
-        (Buffer => null,
-         Status => (Bytes => 0, State => Active));
+      Self.Write_Buffers (0).Address := Buffer (Buffer'First)'Address;
+      Self.Write_Buffers (0).Size    := Buffer'Length;
 
-      Self.Current := 0;
       Self.Controller.Write
         (Device  => Self'Unchecked_Access,
-         Buffer  => Buffer,
-         Status  => Self.Transfers (Self.Current).Status,
+         Buffers => Self.Write_Buffers (0 .. 0),
          Stop    => True,
          Success => Success);
+
+      if not Success then
+         Self.Transaction.State := Failure;
+         Self.Reset_State;
+      end if;
    end Write;
 
    ----------------
@@ -138,29 +178,40 @@ package body A0B.I2C.Device_Drivers is
       On_Completed : A0B.Callbacks.Callback;
       Success      : in out Boolean) is
    begin
+      if not Success or Self.State /= Initial then
+         Success := False;
+
+         return;
+      end if;
+
       Self.Controller.Start (Self'Unchecked_Access, Success);
 
       if not Success then
          return;
       end if;
 
-      Self.On_Completed := On_Completed;
-      Self.Transaction  := Status'Unchecked_Access;
+      Self.State           := Write_Read;
+      Self.On_Completed    := On_Completed;
+      Self.Transaction     := Status'Unchecked_Access;
+      Self.Transaction.all := (0, 0, Active);
 
-      Self.Transfers (0) :=
-        (Buffer => Write_Buffer'Unrestricted_Access,
-         Status => (Bytes => 0, State => Active));
-      Self.Transfers (1) :=
-        (Buffer => Read_Buffer'Unrestricted_Access,
-         Status => (Bytes => 0, State => Active));
+      Self.Write_Buffers (0).Address :=
+        Write_Buffer (Write_Buffer'First)'Address;
+      Self.Write_Buffers (0).Size    := Write_Buffer'Length;
+      Self.Read_Buffers (0).Address  :=
+        Read_Buffer (Read_Buffer'First)'Address;
+      Self.Read_Buffers (0).Size     := Read_Buffer'Length;
 
-      Self.Current := 0;
       Self.Controller.Write
         (Device  => Self'Unchecked_Access,
-         Buffer  => Write_Buffer,
-         Status  => Self.Transfers (Self.Current).Status,
+         Buffers => Self.Write_Buffers (0 .. 0),
          Stop    => False,
          Success => Success);
+
+      if not Success then
+         Self.Transaction.State := Failure;
+         Self.Reset_State;
+      end if;
    end Write_Read;
 
 end A0B.I2C.Device_Drivers;

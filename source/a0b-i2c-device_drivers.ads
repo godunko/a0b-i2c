@@ -28,6 +28,12 @@ is
      limited new Abstract_I2C_Device_Driver with private
        with Preelaborable_Initialization;
 
+   --  procedure Probe
+   --    (Self         : in out I2C_Device_Driver'Class;
+   --     Status       : aliased out Transaction_Status;
+   --     On_Completed : A0B.Callbacks.Callback;
+   --     Success      : in out Boolean);
+
    procedure Write
      (Self         : in out I2C_Device_Driver'Class;
       Buffer       : Unsigned_8_Array;
@@ -43,26 +49,27 @@ is
       On_Completed : A0B.Callbacks.Callback;
       Success      : in out Boolean);
 
+   procedure Read
+     (Self         : in out I2C_Device_Driver'Class;
+      Buffer       : out Unsigned_8_Array;
+      Status       : aliased out Transaction_Status;
+      On_Completed : A0B.Callbacks.Callback;
+      Success      : in out Boolean);
+
 private
 
-   type Transfer_Descriptor is record
-      Buffer : access Unsigned_8_Array;
-      Status : aliased Transfer_Status;
-   end record;
-
-   subtype Active_Transfer is A0B.Types.Unsigned_32;
-
-   type Transfer_Decsriptor_Array is
-     array (Active_Transfer range 0 .. 1) of Transfer_Descriptor;
+   type State is (Initial, Write, Write_Read, Read);
 
    type I2C_Device_Driver
      (Controller : not null access I2C_Bus_Master'Class;
       Address    : Device_Address) is
    limited new Abstract_I2C_Device_Driver with record
-      Transfers    : Transfer_Decsriptor_Array;
-      Current      : Active_Transfer;
-      Transaction  : access Transaction_Status;
-      On_Completed : A0B.Callbacks.Callback;
+      State         : Device_Drivers.State := Initial;
+      On_Completed  : A0B.Callbacks.Callback;
+      Transaction   : access Transaction_Status;
+
+      Write_Buffers : A0B.I2C.Buffer_Descriptor_Array (0 .. 0);
+      Read_Buffers  : A0B.I2C.Buffer_Descriptor_Array (0 .. 0);
    end record;
 
    overriding function Target_Address
