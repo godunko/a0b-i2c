@@ -4,7 +4,14 @@
 --  SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 --
 
+--  Generalized API of the I2C peripheral controllers and abstract device
+--  driver. Support of the I2C peripheral controller for particual MCU is
+--  provided by the board support crates. Few implementations of common
+--  cases of the device drivers is provided in children packages.
+
 pragma Restrictions (No_Elaboration_Code);
+
+with System;
 
 with A0B.Types;
 
@@ -17,13 +24,20 @@ is
 
    type Device_Address is mod 2**10;
 
-   type Transfer_State is (Active, Success, Failure);
-   --  Active, Success, Not_Acknowledged, Failure?
+   type Transfer_State is
+     (Active,    --  Active
+      Success,   --  Completed successfully
+      Failure);  --  Failed
 
-   type Transfer_Status is record
-      Bytes : A0B.Types.Unsigned_32;
-      State : Transfer_State;
+   type Buffer_Descriptor is record
+      Address : System.Address;
+      Size    : A0B.Types.Unsigned_32;
+      Bytes   : A0B.Types.Unsigned_32;
+      State   : Transfer_State;
    end record;
+
+   type Buffer_Descriptor_Array is
+     array (A0B.Types.Unsigned_32 range <>) of aliased Buffer_Descriptor;
 
    type Abstract_I2C_Device_Driver is tagged;
 
@@ -49,21 +63,26 @@ is
    not overriding procedure Write
      (Self    : in out I2C_Bus_Master;
       Device  : not null I2C_Device_Driver_Access;
-      Buffer  : Unsigned_8_Array;
-      Status  : aliased out Transfer_Status;
+      Buffers : in out Buffer_Descriptor_Array;
       Stop    : Boolean;
       Success : in out Boolean) is abstract;
    --  Initiate write operation on the bus. Bus must be locked by the given
-   --  device. When transfer direction changes, ReSTART condition is sent.
+   --  device. When requested by the call of Start, or transfer direction
+   --  changes, ReSTART condition is sent.
    --
    --  This operation is asynchronous. Associated slave device driver will be
    --  notified on completion of the data transfer.
    --
-   --  @param Self    Bus controller.
-   --  @param Device  I2C device to do transfer.
-   --  @param Buffer  Buffer to load data to be transmitted to the device.
-   --  @param Status  Operation status.
-   --  @param Stop    Release bus after transfer completion.
+   --  Some implementations of peripheral controllers hardware need to know
+   --  the total amount of the data to be transferred before start of the
+   --  transfer. So, it is recommended to prepare all necessary data to be
+   --  transferred before requesting of the operation.
+   --
+   --  @param Self     Bus controller.
+   --  @param Device   I2C device to do transfer.
+   --  @param Buffers  Buffers to load data to be transmitted to the device.
+   --  @param Status   Operation status.
+   --  @param Stop     Release bus after transfer completion.
    --  @param Success
    --    On input it specify whether operation should be processed.
    --    On output it returns whether operation has been initiated.
@@ -71,8 +90,7 @@ is
    not overriding procedure Read
      (Self    : in out I2C_Bus_Master;
       Device  : not null I2C_Device_Driver_Access;
-      Buffer  : out Unsigned_8_Array;
-      Status  : aliased out Transfer_Status;
+      Buffers : in out Buffer_Descriptor_Array;
       Stop    : Boolean;
       Success : in out Boolean) is abstract;
    --  Initiate read operation on the bus. Bus must be locked by the locked by
@@ -82,11 +100,11 @@ is
    --  This operation is asynchronous. Associated slave device driver will be
    --  notified on completion of the data transfer.
    --
-   --  @param Self    Bus controller.
-   --  @param Device  I2C device to do transfer.
-   --  @param Buffer  Buffer to store data received from the device.
-   --  @param Status  Operation status.
-   --  @param Stop    Release bus after transfer completion.
+   --  @param Self     Bus controller.
+   --  @param Device   I2C device to do transfer.
+   --  @param Buffers  Buffers to load data to be transmitted to the device.
+   --  @param Status   Operation status.
+   --  @param Stop     Release bus after transfer completion.
    --  @param Success
    --    On input it specify whether operation should be processed.
    --    On output it returns whether operation has been initiated.
