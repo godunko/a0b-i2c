@@ -47,11 +47,13 @@ package body A0B.I2C.Device_Drivers is
             raise Program_Error;
 
          when Write =>
-            Self.Transaction.Written_Octets := Self.Write_Buffers (0).Bytes;
+            Self.Transaction.Written_Octets :=
+              Self.Write_Buffers (0).Transferred;
             Self.Transaction.State          := Self.Write_Buffers (0).State;
 
          when Write_Read =>
-            Self.Transaction.Written_Octets := Self.Write_Buffers (0).Bytes;
+            Self.Transaction.Written_Octets :=
+              Self.Write_Buffers (0).Transferred;
             Self.Transaction.State          := Self.Write_Buffers (0).State;
             Self.State                      := Read;
 
@@ -62,7 +64,8 @@ package body A0B.I2C.Device_Drivers is
                Success => Success);
 
          when Read =>
-            Self.Transaction.Read_Octets := Self.Read_Buffers (0).Bytes;
+            Self.Transaction.Read_Octets :=
+              Self.Read_Buffers (0).Transferred;
             Self.Transaction.State       := Self.Read_Buffers (0).State;
       end case;
    end On_Transfer_Completed;
