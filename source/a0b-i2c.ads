@@ -24,23 +24,21 @@ is
 
    type Device_Address is mod 2**10;
 
-   type Transfer_State is
-     (Active,    --  Active
-      Success,   --  Completed successfully
-      Failure);  --  Failed
-
    type Buffer_Descriptor is record
-      Address     : System.Address;
-      Size        : A0B.Types.Unsigned_32;
-      Transferred : A0B.Types.Unsigned_32;
-      State       : Transfer_State;
+      Address      : System.Address;
+      Size         : A0B.Types.Unsigned_32;
+      Transferred  : A0B.Types.Unsigned_32;
+      State        : A0B.Operation_Status;
+      Acknowledged : Boolean;
    end record;
    --  Descriptor of the transmit/receive buffer.
    --
-   --  @component Address      Address of the first byte of the buffer memory
-   --  @component Size         Size of the buffer in bytes
-   --  @component Transferred  Number of byte transferred by the operation
-   --  @component State        State of the operation
+   --  @component Address       Address of the first byte of the buffer memory
+   --  @component Size          Size of the buffer in bytes
+   --  @component Transferred   Number of byte transferred by the operation
+   --  @component State         State of the operation
+   --  @component Acknowledged  Whether last transferred byte has been
+   --                           acknowledged
 
    type Buffer_Descriptor_Array is
      array (A0B.Types.Unsigned_32 range <>) of aliased Buffer_Descriptor;

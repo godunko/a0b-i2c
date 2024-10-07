@@ -122,8 +122,10 @@ package body A0B.I2C.Device_Drivers is
       Self.State          := Initial;
       A0B.Callbacks.Unset (Self.On_Completed);
       Self.Transaction    := null;
-      Self.Write_Buffers  := [others => (System.Null_Address, 0, 0, Active)];
-      Self.Read_Buffers   := [others => (System.Null_Address, 0, 0, Active)];
+      Self.Write_Buffers  :=
+        [others => (System.Null_Address, 0, 0, Active, False)];
+      Self.Read_Buffers   :=
+        [others => (System.Null_Address, 0, 0, Active, False)];
    end Reset_State;
 
    -----------

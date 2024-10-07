@@ -19,7 +19,7 @@ is
    type Transaction_Status is record
       Written_Octets : A0B.Types.Unsigned_32;
       Read_Octets    : A0B.Types.Unsigned_32;
-      State          : Transfer_State;
+      State          : A0B.Operation_Status;
    end record;
 
    type I2C_Device_Driver
