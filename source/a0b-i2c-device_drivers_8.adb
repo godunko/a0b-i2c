@@ -60,6 +60,8 @@ package body A0B.I2C.Device_Drivers_8 is
    overriding procedure On_Transfer_Completed
      (Self : in out I2C_Device_Driver)
    is
+      use type A0B.Types.Unsigned_32;
+
       Success : Boolean := True;
 
    begin
@@ -68,21 +70,42 @@ package body A0B.I2C.Device_Drivers_8 is
             raise Program_Error;
 
          when Write =>
+            if Self.Write_Buffers (0).State /= A0B.Success then
+               raise Program_Error;
+            end if;
+
             Self.Transaction.Written_Octets :=
               Self.Write_Buffers (1).Transferred;
             Self.Transaction.State          := Self.Write_Buffers (1).State;
 
          when Write_Read =>
-            Self.Transaction.Written_Octets :=
-              Self.Write_Buffers (1).Transferred;
-            Self.Transaction.State          := Self.Write_Buffers (1).State;
-            Self.State                      := Read;
+            --  Write operation of the single octet of the register address.
 
-            Self.Controller.Read
-              (Device  => Self'Unchecked_Access,
-               Buffers => Self.Read_Buffers,
-               Stop    => True,
-               Success => Success);
+            pragma Assert (Self.Write_Buffers (0).Size = 1);
+
+            if Self.Write_Buffers (0).State = A0B.Success
+              and then Self.Write_Buffers (0).Transferred = 1
+              and then Self.Write_Buffers (0).Acknowledged
+            then
+               --  Write operation has been completed successfully, register
+               --  address has been acknowledged by the device.
+
+               Self.State := Read;
+
+               Self.Controller.Read
+                 (Device  => Self'Unchecked_Access,
+                  Buffers => Self.Read_Buffers,
+                  Stop    => True,
+                  Success => Success);
+
+            else
+               --  Write operation has been failed, set failure state and
+               --  complete transaction.
+
+               Self.Transaction.State := A0B.Failure;
+
+               Self.Controller.Stop (Self'Unchecked_Access, Success);
+            end if;
 
          when Read =>
             Self.Transaction.Read_Octets :=
