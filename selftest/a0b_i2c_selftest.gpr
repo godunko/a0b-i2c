@@ -1,0 +1,14 @@
+--
+--  Copyright (C) 2024, Vadim Godunko <vgodunko@gmail.com>
+--
+--  SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+--
+
+with "config/a0b_i2c_selftest_config.gpr";
+
+project A0B_I2C_Selftest is
+
+   for Target use "arm-eabi";
+   for Runtime ("Ada") use "light-cortex-m0";
+
+end A0B_I2C_Selftest;

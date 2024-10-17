@@ -1,0 +1,22 @@
+name = "a0b_i2c_selftest"
+description = "A0B I2C API sefltest"
+version = "0.1.0-dev"
+
+authors = ["Vadim Godunko"]
+maintainers = ["Vadim Godunko <vgodunko@gmail.com>"]
+maintainers-logins = ["godunko"]
+licenses = "Apache-2.0 WITH LLVM-exception"
+
+project-files = ["a0b_i2c_selftest.gpr"]
+
+[configuration]
+generate_ada = false
+generate_c = false
+generate_gpr = true
+
+[[depends-on]]
+a0b_i2c = "*"
+gnat_arm_elf = "*"
+
+[[pins]]
+a0b_i2c = { path='..' }
