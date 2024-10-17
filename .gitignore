@@ -1,3 +1,4 @@
-.objs
-.vscode
-alire
+/.objs/
+/.vscode/
+/alire/
+/config/
