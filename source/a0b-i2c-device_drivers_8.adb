@@ -121,7 +121,7 @@ package body A0B.I2C.Device_Drivers_8 is
    procedure Read
      (Self         : in out I2C_Device_Driver'Class;
       Address      : Register_Address;
-      Buffer       : out Unsigned_8_Array;
+      Buffer       : out A0B.Types.Arrays.Unsigned_8_Array;
       Status       : aliased out Transaction_Status;
       On_Completed : A0B.Callbacks.Callback;
       Success      : in out Boolean) is
@@ -168,11 +168,11 @@ package body A0B.I2C.Device_Drivers_8 is
    begin
       Self.State          := Initial;
       A0B.Callbacks.Unset (Self.On_Completed);
-      Self.Transaction    := null;
-      Self.Write_Buffers  :=
-        [others => (System.Null_Address, 0, 0, Active, False)];
-      Self.Read_Buffers   :=
-        [others => (System.Null_Address, 0, 0, Active, False)];
+      --  Self.Transaction    := null;
+      --  Self.Write_Buffers  :=
+      --    [others => (System.Null_Address, 0, 0, Active, False)];
+      --  Self.Read_Buffers   :=
+      --    [others => (System.Null_Address, 0, 0, Active, False)];
    end Reset_State;
 
    -----------
@@ -182,7 +182,7 @@ package body A0B.I2C.Device_Drivers_8 is
    procedure Write
      (Self         : in out I2C_Device_Driver'Class;
       Address      : Register_Address;
-      Buffer       : Unsigned_8_Array;
+      Buffer       : A0B.Types.Arrays.Unsigned_8_Array;
       Status       : aliased out Transaction_Status;
       On_Completed : A0B.Callbacks.Callback;
       Success      : in out Boolean) is

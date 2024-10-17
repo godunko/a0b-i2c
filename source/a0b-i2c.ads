@@ -19,9 +19,6 @@ package A0B.I2C
   with Preelaborate
 is
 
-   type Unsigned_8_Array is
-     array (A0B.Types.Unsigned_32 range <>) of A0B.Types.Unsigned_8;
-
    type Device_Address is mod 2**10;
 
    type Buffer_Descriptor is record

@@ -13,6 +13,7 @@
 pragma Restrictions (No_Elaboration_Code);
 
 with A0B.Callbacks;
+with A0B.Types.Arrays;
 
 package A0B.I2C.Device_Drivers_8
   with Preelaborate
@@ -43,7 +44,7 @@ is
    procedure Write
      (Self         : in out I2C_Device_Driver'Class;
       Address      : Register_Address;
-      Buffer       : Unsigned_8_Array;
+      Buffer       : A0B.Types.Arrays.Unsigned_8_Array;
       Status       : aliased out Transaction_Status;
       On_Completed : A0B.Callbacks.Callback;
       Success      : in out Boolean);
@@ -53,7 +54,7 @@ is
    procedure Read
      (Self         : in out I2C_Device_Driver'Class;
       Address      : Register_Address;
-      Buffer       : out Unsigned_8_Array;
+      Buffer       : out A0B.Types.Arrays.Unsigned_8_Array;
       Status       : aliased out Transaction_Status;
       On_Completed : A0B.Callbacks.Callback;
       Success      : in out Boolean);
@@ -76,7 +77,7 @@ private
       On_Completed   : A0B.Callbacks.Callback;
       Transaction    : access Transaction_Status;
 
-      Address_Buffer : Unsigned_8_Array (0 .. 0);
+      Address_Buffer : A0B.Types.Arrays.Unsigned_8_Array (0 .. 0);
       --  Buffer to store register address
       Write_Buffers  : A0B.I2C.Buffer_Descriptor_Array (0 .. 1);
       Read_Buffers   : A0B.I2C.Buffer_Descriptor_Array (0 .. 0);
