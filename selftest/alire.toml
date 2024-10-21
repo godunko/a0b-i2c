@@ -17,6 +17,9 @@ generate_gpr = true
 [[depends-on]]
 a0b_i2c = "*"
 gnat_arm_elf = "*"
+gprbuild = "^22.0.1"
+# direct dependency from the `gprbuild` is necessary to workaround current
+# limitation in Alire CI.
 
 [[pins]]
 a0b_i2c = { path='..' }
